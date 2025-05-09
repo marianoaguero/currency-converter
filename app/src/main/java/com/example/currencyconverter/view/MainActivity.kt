@@ -38,10 +38,24 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
-@Preview(showBackground = true)
+@Preview(
+    showBackground = true,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_NO
+)
 @Composable
-fun GreetingPreview() {
-    CurrencyConverterTheme {
+fun LightModePreview() {
+    CurrencyConverterTheme(darkTheme = false) {
+        Greeting("Android")
+    }
+}
+
+@Preview(
+    showBackground = true,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+fun DarkModePreview() {
+    CurrencyConverterTheme(darkTheme = true) {
         Greeting("Android")
     }
 }
