@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.currencyconverter.AppDatabase
 import com.example.currencyconverter.dao.CurrencyDao
+import com.example.currencyconverter.dao.HistoricalConversionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,5 +25,10 @@ object DatabaseModule {
     @Provides
     fun provideCurrencyDao(database: AppDatabase): CurrencyDao {
         return database.currencyDao()
+    }
+
+    @Provides
+    fun provideHistoricalConversionDao(database: AppDatabase): HistoricalConversionDao {
+        return database.historicalConversionDao()
     }
 }

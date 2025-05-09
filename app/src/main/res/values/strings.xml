@@ -7,4 +7,6 @@
     <string name="amount">Amount</string>
     <string name="currency_converter_title">Currency Converter</string>
     <string name="conversion_history_title">Conversion History</string>
+    <string name="conversion_rate">Rate: %1$.4f</string>
+    <string name="conversion_time">Date: %1$s</string>
 </resources>

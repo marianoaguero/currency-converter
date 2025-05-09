@@ -1,6 +1,7 @@
 package com.example.currencyconverter.di
 
 import com.example.currencyconverter.dao.CurrencyDao
+import com.example.currencyconverter.dao.HistoricalConversionDao
 import com.example.currencyconverter.network.CurrencyApiService
 import com.example.currencyconverter.repositories.ConversionRepository
 import com.example.currencyconverter.repositories.ConversionRepositoryImpl
@@ -18,8 +19,9 @@ object RepositoriesModule {
      @Singleton
      fun provideConversionRepository(
           currencyDao: CurrencyDao,
+          historicalConversionDao: HistoricalConversionDao,
           currencyApiService: CurrencyApiService
      ): ConversionRepository {
-          return ConversionRepositoryImpl(currencyDao, currencyApiService)
+          return ConversionRepositoryImpl(currencyDao, historicalConversionDao, currencyApiService)
      }
 }

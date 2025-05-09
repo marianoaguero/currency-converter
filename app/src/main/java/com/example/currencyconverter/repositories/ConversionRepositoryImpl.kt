@@ -1,7 +1,9 @@
 package com.example.currencyconverter.repositories
 
 import com.example.currencyconverter.dao.CurrencyDao
+import com.example.currencyconverter.dao.HistoricalConversionDao
 import com.example.currencyconverter.models.Currency
+import com.example.currencyconverter.models.HistoricalConversion
 import com.example.currencyconverter.network.CurrencyApiService
 import jakarta.inject.Inject
 import kotlinx.coroutines.GlobalScope
@@ -10,11 +12,11 @@ import timber.log.Timber
 
 class ConversionRepositoryImpl @Inject constructor(
     private val currencyDao: CurrencyDao,
+    private val historicalConversionDao: HistoricalConversionDao,
     private val currencyApiService: CurrencyApiService,
 ) : ConversionRepository {
-    override suspend fun getConversionsHistory(): List<Pair<String, Double>> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getConversionsHistory(): List<HistoricalConversion> =
+        historicalConversionDao.getAllHistoricalConversions()
 
     override suspend fun convertCurrency(
         amount: Double,
@@ -29,6 +31,19 @@ class ConversionRepositoryImpl @Inject constructor(
         if (response.isSuccessful) {
             val conversionResult = response.body()
             if (conversionResult != null) {
+                // Save conversion result to the database
+                GlobalScope.launch {
+                    historicalConversionDao.insertHistoricalConversion(
+                        HistoricalConversion(
+                            amount = amount,
+                            fromCurrency = from,
+                            toCurrency = to,
+                            convertedAmount = conversionResult.result,
+                            timestamp = conversionResult.info.timestamp,
+                            conversionRate = conversionResult.info.quote,
+                        )
+                    )
+                }
                 return conversionResult.result
             } else {
                 Timber.d("No conversion result found in response")

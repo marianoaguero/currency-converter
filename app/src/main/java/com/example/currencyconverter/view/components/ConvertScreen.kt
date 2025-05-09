@@ -38,6 +38,7 @@ import com.example.currencyconverter.view.theme.CurrencyConverterTheme
 import com.example.currencyconverter.viewModels.CurrencyUiState
 import com.example.currencyconverter.viewModels.MainViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,14 +81,28 @@ fun ConvertScreen(
                     toTitle,
                     toCurrency,
                     historyButton,
-                    convertButton
+                    convertButton,
+                    resultField,
                 ) = createRefs()
 
+                Button(
+                    onClick = { navController.navigate("history") },
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .background(Color.Transparent)
+                        .padding(16.dp)
+                        .constrainAs(historyButton) {
+                            top.linkTo(parent.top)
+                            end.linkTo(parent.end)
+                        }
+                ) {
+                    Text("History")
+                }
 
                 TextField(
                     value = amount.toString(),
                     onValueChange = {
-                        amount = it.toDouble()
+                        amount = it.toDoubleOrNull() ?: 0.0
                     },
                     label = { Text(stringResource(R.string.amount)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -95,7 +110,7 @@ fun ConvertScreen(
                         .fillMaxWidth()
                         .padding(top = 48.dp)
                         .constrainAs(amountField) {
-                            top.linkTo(parent.top)
+                            top.linkTo(historyButton.bottom)
                             start.linkTo(parent.start)
                             end.linkTo(parent.end)
                         }
@@ -175,7 +190,7 @@ fun ConvertScreen(
                             .fillMaxWidth()
                             .wrapContentSize()
                             .padding(16.dp)
-                            .constrainAs(historyButton) {
+                            .constrainAs(resultField) {
                                 top.linkTo(convertButton.bottom)
                                 start.linkTo(parent.start)
                                 end.linkTo(parent.end)
@@ -201,7 +216,7 @@ fun LightModePreview() {
         ConvertScreen(
             navController = NavHostController(LocalContext.current),
             onConvertClick = { _, _, _ -> },
-            uiState = TODO()
+            uiState = MutableStateFlow(CurrencyUiState())
         )
     }
 }
@@ -217,7 +232,7 @@ fun DarkModePreview() {
         ConvertScreen(
             navController = NavHostController(LocalContext.current),
             onConvertClick = { _, _, _ -> },
-            uiState = TODO()
+            uiState = MutableStateFlow(CurrencyUiState())
         )
     }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.currencyconverter.dao.CurrencyDao
 import com.example.currencyconverter.models.Currency
+import com.example.currencyconverter.models.HistoricalConversion
 import com.example.currencyconverter.repositories.ConversionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -21,9 +22,13 @@ class MainViewModel @Inject constructor(
     var _uiCurrencyState = MutableStateFlow(CurrencyUiState())
     val uiCurrencyState: StateFlow<CurrencyUiState> = _uiCurrencyState
 
+    var _uiHistoryState = MutableStateFlow(HistoryUiState())
+    val uiHistoryState: StateFlow<HistoryUiState> = _uiHistoryState
+
     init {
         getLocalSupportedCurrencies()
         getSupportedCurrencies()
+        getConversionsHistory()
     }
 
     fun getSupportedCurrencies() {
@@ -47,6 +52,10 @@ class MainViewModel @Inject constructor(
 
     fun getConversionsHistory() {
         viewModelScope.launch(Dispatchers.IO) {
+            _uiHistoryState.value = _uiHistoryState.value.copy(
+                isLoading = false,
+                conversionHistory = conversionRepository.getConversionsHistory()
+            )
         }
     }
 
@@ -65,4 +74,10 @@ data class CurrencyUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val conversionResult : Double? = null,
+)
+
+data class HistoryUiState(
+    val conversionHistory: List<HistoricalConversion> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: String? = null,
 )

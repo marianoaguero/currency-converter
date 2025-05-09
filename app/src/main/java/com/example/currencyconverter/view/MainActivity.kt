@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,14 +28,23 @@ class MainActivity : ComponentActivity() {
             CurrencyConverterTheme {
                 Scaffold { innerPadding ->
                     val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "convert", modifier = Modifier.padding(innerPadding)) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = "convert",
+                        modifier = Modifier.padding(innerPadding)
+                    ) {
                         composable("convert") {
-                            ConvertScreen(navController, viewModel.uiCurrencyState) { amount, fromCurrency, toCurrency ->
+                            ConvertScreen(
+                                navController,
+                                viewModel.uiCurrencyState
+                            ) { amount, fromCurrency, toCurrency ->
                                 viewModel.convertCurrency(amount, fromCurrency, toCurrency)
                             }
                         }
                         composable("history") {
-                            HistoryScreen(navController)
+                            HistoryScreen(navController, viewModel.uiHistoryState) {
+                                viewModel.getConversionsHistory()
+                            }
                         }
                     }
                 }
