@@ -1,5 +1,6 @@
 package com.example.currencyconverter.view.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,10 +14,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -30,14 +35,26 @@ import androidx.navigation.NavHostController
 import com.example.currencyconverter.R
 import com.example.currencyconverter.models.Currency
 import com.example.currencyconverter.view.theme.CurrencyConverterTheme
+import com.example.currencyconverter.viewModels.CurrencyUiState
+import com.example.currencyconverter.viewModels.MainViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConvertScreen(navController: NavHostController) {
+fun ConvertScreen(
+    navController: NavHostController,
+    uiState: StateFlow<CurrencyUiState>,
+    onConvertClick: (Double, Currency, Currency) -> Unit
+) {
 
-    var amount by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf(0.0) }
     var selectedFromCurrency by remember { mutableStateOf<Currency?>(null) }
     var selectedToCurrency by remember { mutableStateOf<Currency?>(null) }
+    val uiState = uiState.collectAsState()
+    var conversionResultEnabled = remember { derivedStateOf {
+        uiState.value.conversionResult != null
+    } }
 
     Scaffold(
         topBar = {
@@ -68,8 +85,10 @@ fun ConvertScreen(navController: NavHostController) {
 
 
                 TextField(
-                    value = amount,
-                    onValueChange = { amount = it },
+                    value = amount.toString(),
+                    onValueChange = {
+                        amount = it.toDouble()
+                    },
                     label = { Text(stringResource(R.string.amount)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
@@ -94,10 +113,7 @@ fun ConvertScreen(navController: NavHostController) {
                     textAlign = TextAlign.Center
                 )
                 CurrencySelectionComponent(
-                    currenciesList = listOf(
-                        Currency("USD", "United States Dollar"),
-                        Currency("ARS", "Argentine Peso")
-                    ),
+                    currenciesList = uiState.value.currencies,
                     onSelection = { currency ->
                         selectedFromCurrency = currency
                     },
@@ -119,10 +135,7 @@ fun ConvertScreen(navController: NavHostController) {
                     textAlign = TextAlign.Center
                 )
                 CurrencySelectionComponent(
-                    currenciesList = listOf(
-                        Currency("USD", "United States Dollar"),
-                        Currency("ARS", "Argentine Peso")
-                    ),
+                    currenciesList = uiState.value.currencies,
                     onSelection = { currency ->
                         selectedToCurrency = currency
                     },
@@ -133,7 +146,14 @@ fun ConvertScreen(navController: NavHostController) {
                     }
                 )
                 Button(
-                    onClick = { navController.navigate("history") },
+                    enabled = if (selectedFromCurrency != null && selectedToCurrency != null) {
+                        selectedFromCurrency != selectedToCurrency
+                    } else {
+                        false
+                    },
+                    onClick = {
+                        onConvertClick(amount, selectedFromCurrency!!, selectedToCurrency!!)
+                    },
                     modifier = Modifier
                         .wrapContentSize()
                         .background(Color.Transparent)
@@ -146,6 +166,25 @@ fun ConvertScreen(navController: NavHostController) {
                 ) {
                     Text(stringResource(R.string.convert))
                 }
+
+                // Conversion result
+                if (conversionResultEnabled.value) {
+                    Text(
+                        text = "${uiState.value.conversionResult} ${selectedToCurrency?.code}",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentSize()
+                            .padding(16.dp)
+                            .constrainAs(historyButton) {
+                                top.linkTo(convertButton.bottom)
+                                start.linkTo(parent.start)
+                                end.linkTo(parent.end)
+                            },
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                //onClick = { navController.navigate("history") },
             }
         }
     )
@@ -154,23 +193,31 @@ fun ConvertScreen(navController: NavHostController) {
 @Preview(
     name = "Light Mode",
     showBackground = true,
-    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_NO
+    uiMode = Configuration.UI_MODE_NIGHT_NO
 )
 @Composable
 fun LightModePreview() {
     CurrencyConverterTheme(darkTheme = false) {
-        ConvertScreen(navController = NavHostController(LocalContext.current))
+        ConvertScreen(
+            navController = NavHostController(LocalContext.current),
+            onConvertClick = { _, _, _ -> },
+            uiState = TODO()
+        )
     }
 }
 
 @Preview(
     name = "Dark Mode",
     showBackground = true,
-    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES
+    uiMode = Configuration.UI_MODE_NIGHT_YES
 )
 @Composable
 fun DarkModePreview() {
     CurrencyConverterTheme(darkTheme = true) {
-        ConvertScreen(navController = NavHostController(LocalContext.current))
+        ConvertScreen(
+            navController = NavHostController(LocalContext.current),
+            onConvertClick = { _, _, _ -> },
+            uiState = TODO()
+        )
     }
 }

@@ -7,6 +7,7 @@ import com.example.currencyconverter.dao.CurrencyDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -16,7 +17,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(app: Context): AppDatabase {
+    fun provideDatabase(@ApplicationContext app: Context): AppDatabase {
         return Room.databaseBuilder(app, AppDatabase::class.java, "currency_db").build()
     }
 

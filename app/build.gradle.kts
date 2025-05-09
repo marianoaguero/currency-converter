@@ -71,6 +71,8 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     implementation(libs.hilt.android)
+    implementation(libs.hilt.android.gradle)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     ksp(libs.hilt.android.compiler)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)

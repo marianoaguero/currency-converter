@@ -20,10 +20,13 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.currencyconverter.R
 import com.example.currencyconverter.view.theme.CurrencyConverterTheme
+import com.example.currencyconverter.viewModels.MainViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(navController: NavHostController) {
+
     Scaffold(
         topBar = {
             TopAppBar(
