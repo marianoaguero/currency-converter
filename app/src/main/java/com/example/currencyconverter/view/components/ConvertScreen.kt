@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.currencyconverter.R
 import com.example.currencyconverter.models.Currency
@@ -53,9 +55,11 @@ fun ConvertScreen(
     var selectedFromCurrency by remember { mutableStateOf<Currency?>(null) }
     var selectedToCurrency by remember { mutableStateOf<Currency?>(null) }
     val uiState = uiState.collectAsState()
-    var conversionResultEnabled = remember { derivedStateOf {
-        uiState.value.conversionResult != null
-    } }
+    var conversionResultEnabled = remember {
+        derivedStateOf {
+            uiState.value.conversionResult != null
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -161,7 +165,8 @@ fun ConvertScreen(
                     }
                 )
                 Button(
-                    enabled = if (selectedFromCurrency != null && selectedToCurrency != null) {
+                    enabled = if (selectedFromCurrency != null && selectedToCurrency != null
+                        && !uiState.value.isLoading) {
                         selectedFromCurrency != selectedToCurrency
                     } else {
                         false
@@ -185,7 +190,7 @@ fun ConvertScreen(
                 // Conversion result
                 if (conversionResultEnabled.value) {
                     Text(
-                        text = "${uiState.value.conversionResult} ${selectedToCurrency?.code}",
+                        text = "${uiState.value.conversionResult} ${uiState.value.resultCurrency?.code}",
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentSize()
@@ -199,7 +204,22 @@ fun ConvertScreen(
                     )
                 }
 
-                //onClick = { navController.navigate("history") },
+                if (uiState.value.error != null) {
+                    Text(
+                        text = uiState.value.error ?: "Unknown error",
+                        color = Color.Red,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentSize()
+                            .padding(16.dp)
+                            .constrainAs(resultField) {
+                                top.linkTo(convertButton.bottom)
+                                start.linkTo(parent.start)
+                                end.linkTo(parent.end)
+                            },
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     )

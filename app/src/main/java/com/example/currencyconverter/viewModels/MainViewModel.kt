@@ -3,6 +3,7 @@ package com.example.currencyconverter.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.currencyconverter.dao.CurrencyDao
+import com.example.currencyconverter.dao.HistoricalConversionDao
 import com.example.currencyconverter.models.Currency
 import com.example.currencyconverter.models.HistoricalConversion
 import com.example.currencyconverter.repositories.ConversionRepository
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 class MainViewModel @Inject constructor(
     private val conversionRepository: ConversionRepository,
     private val currencyDao: CurrencyDao,
+    private val historicalConversionDao: HistoricalConversionDao,
 ) : ViewModel() {
 
     var _uiCurrencyState = MutableStateFlow(CurrencyUiState())
@@ -26,26 +28,57 @@ class MainViewModel @Inject constructor(
     val uiHistoryState: StateFlow<HistoryUiState> = _uiHistoryState
 
     init {
-        getLocalSupportedCurrencies()
-        getSupportedCurrencies()
         getConversionsHistory()
     }
 
     fun getSupportedCurrencies() {
         // Call the repository method to fetch supported currencies
         viewModelScope.launch(Dispatchers.IO) {
-            _uiCurrencyState.value = _uiCurrencyState.value.copy(
-                isLoading = false,
-                currencies = conversionRepository.getSupportedCurrencies()
-            )
+            val currenciesResult = conversionRepository.getSupportedCurrencies()
+            if (currenciesResult.success) {
+                // Save currencies to the database
+                val currencies = currenciesResult.data
+                if (currencies != null) {
+                    currencyDao.insertCurrencies(currencies)
+                    _uiCurrencyState.value = _uiCurrencyState.value.copy(
+                        currencies = currencies,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+            } else {
+                _uiCurrencyState.value = _uiCurrencyState.value.copy(
+                    isLoading = false,
+                    error = currenciesResult.error
+                )
+            }
         }
     }
 
     fun convertCurrency(amount: Double, from: Currency, to: Currency) {
+        _uiCurrencyState.value = _uiCurrencyState.value.copy(
+            isLoading = true,
+            error = null
+        )
+
         viewModelScope.launch(Dispatchers.IO) {
             val conversionResult = conversionRepository.convertCurrency(amount, from, to)
+            if (conversionResult.success) {
+                // Save conversion result to the database
+                val historicalConversion = conversionResult.data
+                if (historicalConversion != null) {
+                    historicalConversionDao.insertHistoricalConversion(historicalConversion)
+                }
+            } else {
+                _uiCurrencyState.value = _uiCurrencyState.value.copy(
+                    isLoading = false,
+                    error = conversionResult.error
+                )
+            }
             _uiCurrencyState.value = _uiCurrencyState.value.copy(
-                conversionResult = conversionResult
+                isLoading = false,
+                conversionResult = conversionResult.data?.convertedAmount,
+                resultCurrency = conversionResult.data?.toCurrency
             )
         }
     }
@@ -58,15 +91,6 @@ class MainViewModel @Inject constructor(
             )
         }
     }
-
-    fun getLocalSupportedCurrencies() {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiCurrencyState.value = _uiCurrencyState.value.copy(
-                isLoading = false,
-                currencies = currencyDao.getAllCurrencies()
-            )
-        }
-    }
 }
 
 data class CurrencyUiState(
@@ -74,6 +98,7 @@ data class CurrencyUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val conversionResult : Double? = null,
+    val resultCurrency: Currency? = null,
 )
 
 data class HistoryUiState(

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -67,6 +68,16 @@ fun HistoryScreen(
             )
         },
         content = { padding ->
+            if (uiState.value.conversionHistory.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.no_conversion_history),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp)
+                )
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()

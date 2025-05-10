@@ -5,8 +5,10 @@ import com.example.currencyconverter.dao.HistoricalConversionDao
 import com.example.currencyconverter.models.Currency
 import com.example.currencyconverter.models.HistoricalConversion
 import com.example.currencyconverter.network.CurrencyApiService
+import com.example.currencyconverter.network.RepositoryResponse
 import jakarta.inject.Inject
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -22,65 +24,87 @@ class ConversionRepositoryImpl @Inject constructor(
         amount: Double,
         from: Currency,
         to: Currency
-    ): Double? {
+    ): RepositoryResponse<HistoricalConversion> {
         val response = currencyApiService.convertCurrency(
             amount = amount,
             from = from.code,
             to = to.code
         )
+        var returnValue = RepositoryResponse<HistoricalConversion>(
+            success = false,
+            error = "Error fetching conversion"
+        )
         if (response.isSuccessful) {
             val conversionResult = response.body()
-            if (conversionResult != null) {
-                // Save conversion result to the database
-                GlobalScope.launch {
-                    historicalConversionDao.insertHistoricalConversion(
-                        HistoricalConversion(
-                            amount = amount,
-                            fromCurrency = from,
-                            toCurrency = to,
-                            convertedAmount = conversionResult.result,
-                            timestamp = conversionResult.info.timestamp,
-                            conversionRate = conversionResult.info.quote,
-                        )
+            if (conversionResult != null && conversionResult.success) {
+                returnValue = returnValue.copy(
+                    success = true,
+                    data = HistoricalConversion(
+                        amount = amount,
+                        fromCurrency = from,
+                        toCurrency = to,
+                        convertedAmount = conversionResult.result,
+                        timestamp = conversionResult.info.timestamp,
+                        conversionRate = conversionResult.info.quote,
                     )
-                }
-                return conversionResult.result
+                )
             } else {
                 Timber.d("No conversion result found in response")
+                returnValue = returnValue.copy(
+                    success = false,
+                    error = "No conversion result found"
+                )
             }
         } else {
             Timber.d("Error fetching conversion: ${response.errorBody()}")
+            returnValue = returnValue.copy(
+                success = false,
+                error = "Error fetching conversion"
+            )
         }
-        return null
+        return returnValue
     }
 
-    override suspend fun getSupportedCurrencies(): List<Currency> {
-        currencyDao.getAllCurrencies().ifEmpty {
-            // Fetch from API and insert into DB
-            getCurrenciesFromAPI()
-            emptyList()
-        }.let {
-            return it
-        }
-    }
+    override suspend fun getSupportedCurrencies(): RepositoryResponse<List<Currency>> {
+             val currencyList = currencyDao.getAllCurrencies()
+             return if (currencyList.isEmpty()) {
+                 Timber.d("No currencies found in local database")
+                 getCurrenciesFromAPI()
+             } else {
+                 Timber.d("Currencies found in local database")
+                 RepositoryResponse(success = true, data = currencyList)
+             }
+         }
 
-    private suspend fun getCurrenciesFromAPI() {
+    private suspend fun getCurrenciesFromAPI(): RepositoryResponse<List<Currency>> {
         val response = currencyApiService.getSupportedCurrencies()
+        var returnValue = RepositoryResponse<List<Currency>>(
+            success = false,
+            error = "Error fetching currencies"
+        )
         if (response.isSuccessful) {
             val currencies = response.body()
             if (currencies != null) {
-                // Insert currencies into the database
-                GlobalScope.launch {
-                    currencyDao.insertCurrencies(currencies.currencies.map {
+                returnValue = returnValue.copy(
+                    success = true,
+                    data = currencies.currencies.map {
                         Currency(it.key, it.value)
-                    })
-                }
+                    }
+                )
             } else {
                 Timber.d("No currencies found in response")
+                returnValue = returnValue.copy(
+                    success = false,
+                    error = "No currencies found"
+                )
             }
         } else {
-
             Timber.d("Error fetching currencies: ${response.errorBody()}")
+            returnValue = returnValue.copy(
+                success = false,
+                error = "Error fetching currencies"
+            )
         }
+        return returnValue
     }
 }
