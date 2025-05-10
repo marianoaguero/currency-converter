@@ -15,3 +15,10 @@ API_KEY=[your_api_key]
 ```
 4. Sync the project with Gradle files
 5. Run the app on an emulator or a physical device
+
+## Next Steps
+- Add History conversion details screen
+- Add Unit tests
+- Add loading indicators to convert screen
+- Improve UI/UX
+- Add splash screen
